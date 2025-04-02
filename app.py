@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 import numpy as np
@@ -7,9 +6,23 @@ from sqlalchemy.exc import SQLAlchemyError
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
-from flask import Flask, request, jsonify,render_template
+from flask import Flask, request, jsonify, render_template
+import json
+
+# Create a custom JSON encoder to handle NumPy types
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (np.integer)):
+            return int(obj)
+        elif isinstance(obj, (np.floating)):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
 
 app = Flask(__name__)
+# Apply the custom JSON encoder
+app.json_encoder = NumpyEncoder
 
 class CarRecommendationSystem:
     def __init__(self):
@@ -25,7 +38,7 @@ class CarRecommendationSystem:
         try:
             password = os.getenv("DB_PASSWORD", "")
             encoded_password = password.replace("@", "%40") if password else ""
-            db_url = f"mysql+mysqlconnector://{os.getenv('DB_USER')}:{encoded_password}@{os.getenv('DB_HOST')}/tripglide"
+            db_url = f"mysql+pymysql://{os.getenv('DB_USER')}:{encoded_password}@{os.getenv('DB_HOST')}/tripglide"
             return create_engine(db_url, pool_pre_ping=True)
         except SQLAlchemyError as e:
             print(f"Database connection failed: {e}")
@@ -193,7 +206,7 @@ class CarRecommendationSystem:
 
             recommended_cars.extend(additional_cars[: 5 - len(recommended_cars)])
             
-        car_ids = [car["CarID"] for car in recommended_cars]  # Collect Car IDs
+        car_ids = [int(car["CarID"]) for car in recommended_cars]  # Convert NumPy int64 to Python int
         return self.get_car_details(car_ids)
 
     # Collaborative Filtering Methods
@@ -258,7 +271,7 @@ class CarRecommendationSystem:
         # Group by Agency
         agency_groups = defaultdict(list)
         for _, row in recommended_car_details.iterrows():
-            agency_groups[row["Agency_Name"]].append(row["CarID"])
+            agency_groups[row["Agency_Name"]].append(int(row["CarID"]))  # Convert NumPy int64 to Python int
 
         displayed_cars = []
         used_agencies = set()
@@ -277,7 +290,7 @@ class CarRecommendationSystem:
         if len(displayed_cars) < 5:
             additional_cars = recommended_car_details[~recommended_car_details["CarID"].isin(displayed_cars)]
             additional_cars = additional_cars.sort_values("Rating", ascending=False)
-            displayed_cars.extend(additional_cars["CarID"].tolist()[:5 - len(displayed_cars)])
+            displayed_cars.extend([int(car_id) for car_id in additional_cars["CarID"].tolist()[:5 - len(displayed_cars)]])
 
         return self.get_car_details(displayed_cars)
 
@@ -289,7 +302,7 @@ class CarRecommendationSystem:
             if not car.empty:
                 car = car.iloc[0]
                 car_details.append({
-                    "car_id": car["CarID"],
+                    "car_id": int(car["CarID"]),  # Convert NumPy int64 to Python int
                     "make": car["Make"],
                     "model": car["Model"],
                     "car_type": car["CarType"],
@@ -298,13 +311,29 @@ class CarRecommendationSystem:
                     "price_per_hour": float(car["Price_Per_Hour"]),
                     "rating": float(car["Rating"]),
                     "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
-                    "occupancy": car["Occupancy"],
+                    "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,  # Convert to Python int
                     "ac": car["AC"],
-                    "luggage_capacity": car["Luggage_Capacity"],
+                    "luggage_capacity": int(car["Luggage_Capacity"]),
                     "agency_name": car["Agency_Name"],
                     "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
                 })
         return car_details
+def convert_numpy_types(obj):
+        """Convert numpy types to native Python types for JSON serialization."""
+        import numpy as np
+        
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {key: convert_numpy_types(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [convert_numpy_types(element) for element in obj]
+        else:
+            return obj
 
 # Initialize the recommendation system
 recommender = CarRecommendationSystem()
@@ -312,7 +341,7 @@ recommender = CarRecommendationSystem()
 @app.route('/')
 def index():
     locations = recommender.get_valid_locations()
-    return render_template('index.html',locations=locations)
+    return render_template('index.html', locations=locations)
 
 @app.route('/api/locations', methods=['GET'])
 def get_locations():
@@ -373,10 +402,12 @@ def content_recommendations():
         
     # Step 4: Get recommendations
     recommendations = recommender.recommend_similar_cars()
-    
+     # Convert all numpy types before jsonify
+    safe_recommendations = convert_numpy_types(recommendations)
+     
     return jsonify({
-        "recommendations": recommendations,
-        "count": len(recommendations)
+        "recommendations": safe_recommendations,
+        "count": (len(safe_recommendations))  # This is now a regular Python int
     })
 
 @app.route('/api/collaborative_recommendations', methods=['POST'])
@@ -393,10 +424,12 @@ def collaborative_recommendations():
     
     if isinstance(recommendations, dict) and 'error' in recommendations:
         return jsonify(recommendations), 400
-        
+     # Convert all numpy types before jsonify
+    safe_recommendations = convert_numpy_types(recommendations)
+     
     return jsonify({
-        "recommendations": recommendations,
-        "count": len(recommendations)
+        "recommendations": safe_recommendations,
+        "count": int(len(safe_recommendations))  # This is now a regular Python int
     })
 
 if __name__ == '__main__':
