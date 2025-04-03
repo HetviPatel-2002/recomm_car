@@ -7,6 +7,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        body{
+            background-image: url("/static/images/bg.jpeg");
+            background-size: cover; 
+             background-position: center; 
+             background-repeat: no-repeat; 
+ 
+             margin: 0; 
+             padding: 0;
+            
+        }
         :root {
             --primary-color: #3498db;
             --secondary-color: #2980b9;
@@ -27,7 +37,7 @@
         }
 
         body {
-            background-color: #f5f7fa;
+            
             color: var(--dark-color);
             line-height: 1.6;
         }
@@ -59,18 +69,18 @@
         }
 
 
-body {
+/* body {
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Full viewport height */
+    min-height: 100vh; 
     margin: 0;
 }
 
 main {
-    flex: 1; /* Pushes footer to bottom */
-}
+    flex: 1; 
+} */
         .card {
-            background-color: white;
+            background-color: #f6f8fe;
             border-radius: var(--radius);
             box-shadow: var(--shadow);
             margin-bottom: 30px;
@@ -218,6 +228,12 @@ main {
             vertical-align: middle;
             margin-right: 10px;
         }
+        .car-detail .material-icons {
+            vertical-align: middle;
+            margin-right: 12px;
+            margin-left: 6.5px;
+            font-size: 37px;
+        }
         .car-detail span {
             font-weight: 1000;
             color: var(--dark-color);
@@ -273,16 +289,17 @@ main {
                 grid-template-columns: 1fr;
             }
 
-body {
+/* body {
     display: flex;
     flex-direction: column;
-    min-height: 100vh; /* Full viewport height */
+    min-height: 100px; 
+    width: 500px; 
     margin: 0;
 }
 
 main {
-    flex: 1; /* Pushes footer to bottom */
-}
+    flex: 1; 
+} */
         }
     </style>
 </head>
@@ -617,10 +634,10 @@ main {
                         <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=112254&format=png&color=000000" alt="transmission_icon" width="40" height="40"><span>Transmission:</span> ${car.transmission}</div>
                         <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=9JHIJk60xdLp&format=png&color=000000" alt="Fuel_icon" width="40" height="40"><span>Fuel Policy:</span> ${car.fuel_policy}</div>
                         <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=41152&format=png&color=000000" alt="Mileage_icon" width="40" height="40"><span>Mileage:</span> ${car.mileage_kmpl} kmpl</div>
-                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=GOh5Umx9qe8u&format=png&color=000000" alt="seat_icon" width="40" height="40"><span>Seats:</span> ${car.occupancy}</div>
+                        <div class="car-detail"><span class="material-icons">person</span><span>Seats:</span> ${car.occupancy}</div>
                         <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=wgC4n5niQXU_&format=png&color=000000" alt="AC_icon" width="40" height="40"><span>AC:</span> ${car.ac}</div>
                         <div class="car-detail"><img src="https://cdn-icons-png.flaticon.com/128/2028/2028454.png" alt="lugguage_icon" width="40" height="40"><span>Luggage:</span> ${car.luggage_capacity}</div>
-                        <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="50" height="50"><span>Agency:</span> ${car.agency_name}</div>
+                        <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="45" height="45"><span>Agency:</span> ${car.agency_name}</div>
                     </div>
                     <div class="price-tag">₹${car.price_per_hour}/hour</div>
                 `;
