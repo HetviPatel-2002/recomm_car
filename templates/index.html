@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TripGlide - Car Recommendations</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         :root {
             --primary-color: #3498db;
@@ -57,6 +58,17 @@
             opacity: 0.9;
         }
 
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Full viewport height */
+    margin: 0;
+}
+
+main {
+    flex: 1; /* Pushes footer to bottom */
+}
         .card {
             background-color: white;
             border-radius: var(--radius);
@@ -202,9 +214,12 @@
         .car-detail {
             margin-bottom: 8px;
         }
-
+        .car-detail img {
+            vertical-align: middle;
+            margin-right: 10px;
+        }
         .car-detail span {
-            font-weight: 600;
+            font-weight: 1000;
             color: var(--dark-color);
         }
 
@@ -257,6 +272,17 @@
             .car-details {
                 grid-template-columns: 1fr;
             }
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Full viewport height */
+    margin: 0;
+}
+
+main {
+    flex: 1; /* Pushes footer to bottom */
+}
         }
     </style>
 </head>
@@ -268,8 +294,9 @@
             <p>Find the perfect car for your journey</p>
         </header>
 
-        <!-- Step 1: User ID and Location Form -->
-        <div id="step1" class="step active">
+       <main>
+         <!-- Step 1: User ID and Location Form -->
+         <div id="step1" class="step active">
             <div class="card">
                 <h2>Tell us about yourself</h2>
                 <form id="userForm">
@@ -341,12 +368,14 @@
                 <button type="button" class="btn btn-block back-btn" onclick="goToStep(1)">Start Over</button>
             </div>
         </div>
+       </main>
     </div>
 
     <footer>
         <p>&copy; 2025 TripGlide Car Rentals. All rights reserved.</p>
     </footer>
 
+    
     <script>
         // Global variables
         let currentStep = 1;
@@ -581,17 +610,17 @@
                 }
                 
                 carCard.innerHTML = `
-                    <h3>${car.make} ${car.model}</h3>
+                    <h3>${car.model}</h3>
                     ${starRating.outerHTML}
                     <div class="car-details">
-                        <div class="car-detail"><span>Type:</span> ${car.car_type}</div>
-                        <div class="car-detail"><span>Transmission:</span> ${car.transmission}</div>
-                        <div class="car-detail"><span>Fuel Policy:</span> ${car.fuel_policy}</div>
-                        <div class="car-detail"><span>Mileage:</span> ${car.mileage_kmpl} kmpl</div>
-                        <div class="car-detail"><span>Seats:</span> ${car.occupancy}</div>
-                        <div class="car-detail"><span>AC:</span> ${car.ac}</div>
-                        <div class="car-detail"><span>Luggage:</span> ${car.luggage_capacity}</div>
-                        <div class="car-detail"><span>Agency:</span> ${car.agency_name}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=B1m01Ohu23Hh&format=png&color=228BE6" alt="car_icon" width="40" height="40" ><span>Type:</span> ${car.car_type}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=112254&format=png&color=000000" alt="transmission_icon" width="40" height="40"><span>Transmission:</span> ${car.transmission}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=9JHIJk60xdLp&format=png&color=000000" alt="Fuel_icon" width="40" height="40"><span>Fuel Policy:</span> ${car.fuel_policy}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=41152&format=png&color=000000" alt="Mileage_icon" width="40" height="40"><span>Mileage:</span> ${car.mileage_kmpl} kmpl</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=GOh5Umx9qe8u&format=png&color=000000" alt="seat_icon" width="40" height="40"><span>Seats:</span> ${car.occupancy}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=wgC4n5niQXU_&format=png&color=000000" alt="AC_icon" width="40" height="40"><span>AC:</span> ${car.ac}</div>
+                        <div class="car-detail"><img src="https://cdn-icons-png.flaticon.com/128/2028/2028454.png" alt="lugguage_icon" width="40" height="40"><span>Luggage:</span> ${car.luggage_capacity}</div>
+                        <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="50" height="50"><span>Agency:</span> ${car.agency_name}</div>
                     </div>
                     <div class="price-tag">₹${car.price_per_hour}/hour</div>
                 `;
