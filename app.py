@@ -430,7 +430,7 @@ def collaborative_recommendations():
     return jsonify({
         "recommendations": safe_recommendations,
         "count": int(len(safe_recommendations))  # This is now a regular Python int
-    })
+    }) 
 
 if __name__ == '__main__':
     app.run(debug=True)
