@@ -1,5 +1,5 @@
 :root {
-    --primary-color: #3498db;
+    --primary-color: #032b44;
     --secondary-color: #2980b9;
     --accent-color: #1abc9c;
     --light-color: #ecf0f1;
@@ -18,7 +18,7 @@
 }
 
 body {
-    background-image: url("/static/images/background.jpeg");
+    /* background-image: url("/static/images/background.jpeg"); */
     background-size: cover; 
     background-position: center; 
     background-repeat: no-repeat; 
@@ -55,7 +55,7 @@ header p {
 }
 
 .card {
-    background-color: #f6f8fe;
+    background-color: #ffffff;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     margin-bottom: 30px;
@@ -177,8 +177,15 @@ select:focus, input:focus {
     border-radius: var(--radius);
     background-color: white;
     transition: transform 0.3s ease;
+    height: 50%;
+    width: 50%;
+    min-width: 1000px;
+    max-width: 100%;
+    min-height: 350px;
+    max-height: 100%;
 }
 
+ 
 .car-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow);
@@ -196,7 +203,7 @@ select:focus, input:focus {
     gap: 10px;
 }
 
-.car-detail {
+.car-detail { 
     margin-bottom: 8px;
 }
 
