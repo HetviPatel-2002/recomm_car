@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Payment</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Complete Your Payment</h1>
+        <div class="payment-summary">
+            <h2>Booking Summary</h2>
+            <p><strong>Car Model:</strong> {{ car.name }}</p>
+            <!-- <p><strong>Location:</strong> {{ car.location }}</p> -->
+            <p><strong>Duration:</strong> {{ days }} day(s)</p>
+            <p><strong>Total Amount:</strong> ₹{{ amount }}</p>
+        </div>
+        
+        <div class="payment-form">
+            <form id="payment-form">
+                <div id="payment-element">
+                    <!-- Stripe Elements will be inserted here -->
+                </div>
+                <div id="payment-message" class="hidden"></div>
+                <button id="submit-button" class="btn btn-primary">
+                    <div class="spinner hidden" id="spinner"></div>
+                    <span id="button-text">Pay Now</span>
+                </button>
+            </form>
+        </div>
+        
+        <div class="payment-actions">
+            <a href="{{ url_for('confirm_booking', car_id=car.id, days=days) }}" class="btn btn-secondary">Back</a>
+        </div>
+    </div>
+    
+    <script>
+        // Global variables
+        const stripe = Stripe('{{ stripe_public_key }}');
+        let elements;
+        let paymentElement;
+        let paymentIntentClientSecret;
+        
+        // Initialize the payment form
+        async function initialize() {
+            // Create a payment intent on the server
+            const response = await fetch('/create_payment_intent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    car_id: '{{ car.id }}',
+                    rental_days: parseInt('{{ days }}')
+                })
+            });
+            
+            const data = await response.json();
+            if (data.error) {
+                showMessage(data.error);
+                return;
+            }
+            
+            paymentIntentClientSecret = data.clientSecret;
+            
+            // Initialize Stripe Elements with the client secret
+            elements = stripe.elements({
+                clientSecret: paymentIntentClientSecret,
+                appearance: {
+                    theme: 'stripe',
+                    variables: {
+                        colorPrimary: '#3498db',
+                    }
+                }
+            });
+            
+            // Create and mount the Payment Element
+            paymentElement = elements.create('payment');
+            paymentElement.mount('#payment-element');
+        }
+        
+        // Handle form submission
+        async function handleSubmit(e) {
+            e.preventDefault();
+            setLoading(true);
+            
+            const {error} = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    return_url: window.location.origin + "/payment_success",
+                },
+                redirect: 'if_required'
+            });
+            
+            if (error) {
+                showMessage(error.message);
+                setLoading(false);
+            } else {
+                // Payment successful, but no redirect happened
+                // Send confirmation to server
+                const paymentIntent = await stripe.retrievePaymentIntent(paymentIntentClientSecret);
+                
+                const response = await fetch('/process_payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment_intent_id: paymentIntent.paymentIntent.id
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    showMessage(data.error || "Payment processing failed");
+                    setLoading(false);
+                }
+            }
+        }
+        
+        // Show a message to the user
+        function showMessage(messageText) {
+            const messageContainer = document.querySelector("#payment-message");
+            messageContainer.classList.remove("hidden");
+            messageContainer.textContent = messageText;
+            
+            setTimeout(function() {
+                messageContainer.classList.add("hidden");
+                messageContainer.textContent = "";
+            }, 6000);
+        }
+        
+        // Show a spinner on payment processing
+        function setLoading(isLoading) {
+            if (isLoading) {
+                document.querySelector("#submit-button").disabled = true;
+                document.querySelector("#spinner").classList.remove("hidden");
+                document.querySelector("#button-text").classList.add("hidden");
+            } else {
+                document.querySelector("#submit-button").disabled = false;
+                document.querySelector("#spinner").classList.add("hidden");
+                document.querySelector("#button-text").classList.remove("hidden");
+            }
+        }
+        
+        // Initialize the payment form when the page loads
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Add event listener for form submission
+        document.querySelector("#payment-form").addEventListener("submit", handleSubmit);
+    </script>
+</body>
+</html>

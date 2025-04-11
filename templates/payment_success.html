@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="success-message">
+            <h1>Payment Successful!</h1>
+            <p>Your car has been booked successfully. Thank you for your business!</p>
+            <p>Booking reference: <strong>{{ booking_reference }}</strong></p>
+            
+            <div class="booking-details">
+                <h2>Booking Details</h2>
+                <p><strong>Car Model:</strong> {{ car.model }}</p>
+                <p><strong>Location:</strong> {{ car.location }}</p>
+                <p><strong>Duration:</strong> {{ days }} day(s)</p>
+                <p><strong>Amount Paid:</strong> ₹{{ amount }}</p>
+            </div>
+            
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Home</a>
+        </div>
+    </div>
+</body>
+</html>

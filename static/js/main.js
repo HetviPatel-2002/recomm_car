@@ -243,12 +243,30 @@ function displayRecommendations(recommendations) {
                 <div class="car-detail"><img src="https://cdn-icons-png.flaticon.com/128/2028/2028454.png" alt="lugguage_icon" width="40" height="40"><span>Luggage:</span> ${car.luggage_capacity}</div>
                 <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="45" height="45"><span>Agency:</span> ${car.agency_name}</div>
             </div>
-            <div class="price-tag">₹${car.price_per_hour}/hour</div>
+            <div class="price-booking">
+                <div class="price-tag">₹${car.price_per_day || car.price_per_hour}/day</div>
+                <div class="booking-options">
+                    <select class="rental-days" id="days-${car.id}">
+                        ${[1, 2, 3, 5, 7, 14, 30].map(d => `<option value="${d}">${d} day${d > 1 ? 's' : ''}</option>`).join('')}
+                    </select>
+                     <button class="book-now-btn" data-car-id="${car.id}">Book Now</button>
+                </div>
+            </div>
         `;
         
         recommendationsContainer.appendChild(carCard);
     });
-}
+    document.querySelectorAll('.book-now-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const carId = this.getAttribute('data-car-id');
+            const daysSelect = document.getElementById(`days-${carId}`);
+            const days = daysSelect.value;
+            
+            // Redirect to confirmation page
+            window.location.href = `/confirm_booking/${carId}?days=${days}`;
+        });
+    });
+} // Added missing closing curly brace here
 
 function goToStep(step) {
     // Hide all steps
