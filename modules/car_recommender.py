@@ -277,27 +277,82 @@ class CarRecommendationSystem:
 
         return self.get_car_details(displayed_cars)
 
-    def get_car_details(self, car_ids):
-        """Get detailed information about specified cars."""
-        car_details = []
-        for car_id in car_ids:
+    def get_car_details(self, car_id):
+        """Get detailed information about a specified car."""
+        # Check if car_id is a list or a single value
+        if isinstance(car_id, list):
+            # Original functionality for list of car IDs
+            car_details = []
+            for cid in car_id:
+                car = self.car_df[self.car_df["CarID"] == cid]
+                if not car.empty:
+                    car = car.iloc[0]
+                    car_details.append({
+                        "id": int(car["CarID"]),  # Renamed to 'id' for consistency
+                        "name": f"{car['Make']} {car['Model']}",  # Added a name field
+                        "car_id": int(car["CarID"]),
+                        "make": car["Make"],
+                        "model": car["Model"],
+                        "car_type": car["CarType"],
+                        "fuel_policy": car["Fuel_Policy"],
+                        "transmission": car["Transmission"],
+                        "price_per_hour": float(car["Price_Per_Hour"]),
+                        "price_per_day": float(car["Price_Per_Hour"]) * 24,  # Calculate daily price
+                        "rating": float(car["Rating"]),
+                        "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
+                        "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,
+                        "ac": car["AC"],
+                        "unlimited_mileage": car.get("unlimited_mileage", 0),  # Add this if it exists in your data
+                        "luggage_capacity": int(car["Luggage_Capacity"]),
+                        "agency_name": car["Agency_Name"],
+                        "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
+                        "location": car.get("Location", "")  # Add location if it exists in your data
+                    })
+            return car_details
+        else:
+            # New functionality for a single car ID
             car = self.car_df[self.car_df["CarID"] == car_id]
             if not car.empty:
                 car = car.iloc[0]
-                car_details.append({
-                    "car_id": int(car["CarID"]),  # Convert NumPy int64 to Python int
-                    "make": car["Make"],
-                    "model": car["Model"],
+                return {
+                    "id": int(car["CarID"]),
+                    "name": f"{car['Make']} {car['Model']}",
                     "car_type": car["CarType"],
                     "fuel_policy": car["Fuel_Policy"],
                     "transmission": car["Transmission"],
                     "price_per_hour": float(car["Price_Per_Hour"]),
+                    "price_per_day": float(car["Price_Per_Hour"]) * 24,  # Calculate daily price
                     "rating": float(car["Rating"]),
                     "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
-                    "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,  # Convert to Python int
+                    "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,
                     "ac": car["AC"],
+                    "unlimited_mileage": car.get("unlimited_mileage", 0),  # Add this if it exists in your data
                     "luggage_capacity": int(car["Luggage_Capacity"]),
                     "agency_name": car["Agency_Name"],
                     "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
-                })
-        return car_details
+                    "location": car.get("Location", "")  # Add location if it exists in your data
+                }
+            return None
+            """Get detailed information about specified cars."""
+            car_details = []
+            for car_id in car_ids:
+                car = self.car_df[self.car_df["CarID"] == car_id]
+                if not car.empty:
+                    car = car.iloc[0]
+                    car_details.append({
+                        "car_id": int(car["CarID"]),  # Convert NumPy int64 to Python int
+                        "make": car["Make"],
+                        "model": car["Model"],
+                        "car_type": car["CarType"],
+                        "fuel_policy": car["Fuel_Policy"],
+                        "transmission": car["Transmission"],
+                        "price_per_hour": float(car["Price_Per_Hour"]),
+                        "rating": float(car["Rating"]),
+                        "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
+                        "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,  # Convert to Python int
+                        "ac": car["AC"],
+                        "luggage_capacity": int(car["Luggage_Capacity"]),
+                        "agency_name": car["Agency_Name"],
+                        "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
+                    })
+            return car_details
