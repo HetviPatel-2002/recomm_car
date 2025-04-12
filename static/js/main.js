@@ -230,18 +230,30 @@ function displayRecommendations(recommendations) {
             starRating.innerHTML += starIcon;
         }
         
+        // Check if car has an image URL
+        const carImageHTML = car.image_url 
+            ? `<div class="car-image-container"><img src="${car.image_url}" alt="${car.name}" class="car-image"></div>`
+            : '<div class="car-image-container"><div class="no-image">No Image</div></div>'; // Placeholder if no image
+        
         carCard.innerHTML = `
-            <h3>${car.model}</h3>
-            ${starRating.outerHTML}
-            <div class="car-details">
-                <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=B1m01Ohu23Hh&format=png&color=228BE6" alt="car_icon" width="40" height="40" ><span>Type:</span> ${car.car_type}</div>
-                <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=112254&format=png&color=000000" alt="transmission_icon" width="40" height="40"><span>Transmission:</span> ${car.transmission}</div>
-                <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=9JHIJk60xdLp&format=png&color=000000" alt="Fuel_icon" width="40" height="40"><span>Fuel Policy:</span> ${car.fuel_policy}</div>
-                <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=41152&format=png&color=000000" alt="Mileage_icon" width="40" height="40"><span>Mileage:</span> ${car.mileage_kmpl} kmpl</div>
-                <div class="car-detail"><span class="material-icons">person</span><span>Seats:</span> ${car.occupancy}</div>
-                <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=wgC4n5niQXU_&format=png&color=000000" alt="AC_icon" width="40" height="40"><span>AC:</span> ${car.ac}</div>
-                <div class="car-detail"><img src="https://cdn-icons-png.flaticon.com/128/2028/2028454.png" alt="lugguage_icon" width="40" height="40"><span>Luggage:</span> ${car.luggage_capacity}</div>
-                <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="45" height="45"><span>Agency:</span> ${car.agency_name}</div>
+            <div class="car-card-content">
+                <div class="car-image-section">
+                    ${carImageHTML}
+                </div>
+                <div class="car-info-section">
+                    <h3>${car.name}</h3>
+                    ${starRating.outerHTML}
+                    <div class="car-details">
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=B1m01Ohu23Hh&format=png&color=228BE6" alt="car_icon" width="40" height="40" ><span>Type:</span> ${car.car_type}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=112254&format=png&color=000000" alt="transmission_icon" width="40" height="40"><span>Transmission:</span> ${car.transmission}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=9JHIJk60xdLp&format=png&color=000000" alt="Fuel_icon" width="40" height="40"><span>Fuel Policy:</span> ${car.fuel_policy}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=41152&format=png&color=000000" alt="Mileage_icon" width="40" height="40"><span>Mileage:</span> ${car.mileage_kmpl} kmpl</div>
+                        <div class="car-detail"><span class="material-icons">person</span><span>Seats:</span> ${car.occupancy}</div>
+                        <div class="car-detail"><img src="https://img.icons8.com/?size=100&id=wgC4n5niQXU_&format=png&color=000000" alt="AC_icon" width="40" height="40"><span>AC:</span> ${car.ac}</div>
+                        <div class="car-detail"><img src="https://cdn-icons-png.flaticon.com/128/2028/2028454.png" alt="lugguage_icon" width="40" height="40"><span>Luggage:</span> ${car.luggage_capacity}</div>
+                        <div class="car-detail"><img src="https://cdn.iconscout.com/icon/premium/png-512-thumb/car-rental-11566737-9463248.png" alt="agency_icon" width="45" height="45"><span>Agency:</span> ${car.agency_name}</div>
+                    </div>
+                </div>
             </div>
             <div class="price-booking">
                 <div class="price-tag">₹${car.price_per_day || car.price_per_hour}/day</div>
@@ -266,8 +278,7 @@ function displayRecommendations(recommendations) {
             window.location.href = `/confirm_booking/${carId}?days=${days}`;
         });
     });
-} // Added missing closing curly brace here
-
+}
 function goToStep(step) {
     // Hide all steps
     document.querySelectorAll('.step').forEach(el => {
