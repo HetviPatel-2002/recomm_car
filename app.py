@@ -130,7 +130,7 @@ def confirm_booking(car_id):
     car_details = recommender.get_car_details(car_id)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
-    print("Car details:", car_details)
+    # print("Car details:", car_details)
     # Get rental days from query params or default to 1
     rental_days = request.args.get('days', 1, type=int)
     
@@ -151,6 +151,7 @@ def payment_page(car_id):
         return jsonify({"error": "Invalid car ID format"}), 400
     # Retrieve car details from recommendation system
     car_details = recommender.get_car_details(car_id)
+    print("payment car details:",car_details)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
     
@@ -175,6 +176,7 @@ def create_payment_intent():
     
     # Get car details
     car_details = recommender.get_car_details(car_id)
+    print("car_details in create payment intent page",car_details)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
     

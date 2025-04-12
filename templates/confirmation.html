@@ -5,35 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirm Booking</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <h1>Confirm Your Booking</h1>
+        
         <div class="booking-details">
-            <h2>Car Details</h2>
-            <p><strong>Car Model:</strong> {{ car.name }}</p>
-            <p><strong>Car Type:</strong> {{ car.car_type }}</p>
-            <!-- <p><strong>Location:</strong> {{ car.location }}</p> -->
-            <p><strong>Rate:</strong> ₹{{ car.price_per_day }} per day</p>
-            <p><strong>Total Cost:</strong> ₹{{ total_cost }} for {{ days }} day(s)</p>
+            <div class="booking-details-image">
+                <img src="{{ car.image_url if car.image_url else 'https://via.placeholder.com/400x250?text=No+Image+Available' }}" alt="{{ car.name }}" class="car-image">
+            </div>
             
-            <div class="car-features">
-                <h3>Features:</h3>
-                <ul>
-                    {% if car.ac %}
-                    <li>Air Conditioning</li>
-                    {% endif %}
-                    {% if car.unlimited_mileage %}
-                    <li>Unlimited Mileage</li>
-                    {% endif %}
-                    <!-- Add any other features your car model has -->
-                </ul>
+            <div class="booking-details-info">
+                <h2>Car Details</h2>
+                <p><strong>Car Model:</strong> {{ car.name }}</p>
+                <p><strong>Car Type:</strong> {{ car.car_type }}</p>
+                <p><strong>Rate:</strong> ₹{{ car.price_per_day }} per day</p>
+                <p><strong>Total Cost:</strong> ₹{{ total_cost }} for {{ days }} day(s)</p>
+                
+                <div class="car-features">
+                    <h3>Features:</h3>
+                    <ul>
+                        {% if car.ac %}
+                        <li>Air Conditioning</li>
+                        {% endif %}
+                        {% if car.unlimited_mileage %}
+                        <li>Unlimited Mileage</li>
+                        {% endif %}
+                        <!-- Add any other features your car model has -->
+                    </ul>
+                </div>
             </div>
         </div>
         
         <div class="confirmation-actions">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Back to Search</a>
-            <a href="{{ url_for('payment_page', car_id=car.id, days=days) }}" class="btn btn-primary">Proceed to Payment</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Search
+            </a>
+            <a href="{{ url_for('payment_page', car_id=car.id, days=days) }}" class="btn btn-primary">
+                Proceed to Payment <i class="fas fa-arrow-right"></i>
+            </a>
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

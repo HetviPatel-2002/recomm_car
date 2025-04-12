@@ -5,26 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Complete Payment</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
     <div class="container">
         <h1>Complete Your Payment</h1>
+        
         <div class="payment-summary">
-            <h2>Booking Summary</h2>
-            <p><strong>Car Model:</strong> {{ car.name }}</p>
-            <!-- <p><strong>Location:</strong> {{ car.location }}</p> -->
-            <p><strong>Duration:</strong> {{ days }} day(s)</p>
-            <p><strong>Total Amount:</strong> ₹{{ amount }}</p>
+            <h2><i class="fas fa-receipt"></i> Booking Summary</h2>
+            <div class="booking-details">
+                <div class="booking-details-image">
+                    <img src="{{ car.image_url if car.image_url else 'https://via.placeholder.com/400x250?text=No+Image+Available' }}" alt="{{ car.name }}" class="car-image">
+                </div>
+                
+                <div class="booking-details-info">
+                    <p><strong>Car Model:</strong> {{ car.name }}</p>
+                    <p><strong>Duration:</strong> {{ days }} day(s)</p>
+                    <p><strong>Total Amount:</strong> <span class="price-tag">₹{{ amount }}</span></p>
+                </div>
+            </div>
         </div>
         
         <div class="payment-form">
+            <h2><i class="fas fa-credit-card"></i> Payment Details</h2>
             <form id="payment-form">
                 <div id="payment-element">
                     <!-- Stripe Elements will be inserted here -->
                 </div>
                 <div id="payment-message" class="hidden"></div>
-                <button id="submit-button" class="btn btn-primary">
+                <button id="submit-button" class="btn btn-primary btn-block">
                     <div class="spinner hidden" id="spinner"></div>
                     <span id="button-text">Pay Now</span>
                 </button>
@@ -32,7 +42,9 @@
         </div>
         
         <div class="payment-actions">
-            <a href="{{ url_for('confirm_booking', car_id=car.id, days=days) }}" class="btn btn-secondary">Back</a>
+            <a href="{{ url_for('confirm_booking', car_id=car.id, days=days) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
         </div>
     </div>
     
