@@ -171,7 +171,8 @@ def payment_page(car_id):
 def create_payment_intent():
     """Create a PaymentIntent for Stripe."""
     data = request.get_json()
-    car_id = data.get('car_id')
+    print("data",data)
+    car_id = int(data.get('car_id'))
     rental_days = data.get('rental_days', 1)
     
     # Get car details

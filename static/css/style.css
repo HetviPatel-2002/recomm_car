@@ -175,6 +175,7 @@ select:focus, input:focus {
     border-radius: var(--radius);
     border-left: 4px solid var(--danger-color);
     animation: fadeIn 0.5s ease;
+    display:none;
 }
 
 .success-message {
@@ -545,9 +546,8 @@ select:focus, input:focus {
 
 /* Utility classes */
 .hidden {
-    display: none;
+    display: none !important;
 }
-
 /* Spinner for loading state */
 .spinner {
     display: inline-block;
