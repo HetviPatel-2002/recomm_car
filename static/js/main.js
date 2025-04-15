@@ -256,7 +256,9 @@ function displayRecommendations(recommendations) {
                 </div>
             </div>
             <div class="price-booking">
-                <div class="price-tag">₹${car.price_per_day || car.price_per_hour}/day</div>
+                <div class="price-tag">
+                  ₹${car.price_per_day || car.price_per_hour}/${car.price_per_day ? "day" : "hour"}
+                </div>
                 <div class="booking-options">
                     <select class="rental-days" id="days-${car.id}">
                         ${[1, 2, 3, 5, 7, 14, 30].map(d => `<option value="${d}">${d} day${d > 1 ? 's' : ''}</option>`).join('')}
@@ -276,6 +278,7 @@ function displayRecommendations(recommendations) {
             
             // Redirect to confirmation page
             window.location.href = `/confirm_booking/${carId}?days=${days}`;
+            
         });
     });
 }

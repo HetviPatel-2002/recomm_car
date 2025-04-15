@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 import numpy as np
-from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, OperationFailure
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
@@ -10,31 +10,47 @@ from collections import defaultdict
 class CarRecommendationSystem:
     def __init__(self):
         """Initialize database connection and load data."""
-        self.engine = self.connect_to_db()
+        self.client = self.connect_to_db()
+        self.db = self.client['tripglide'] if self.client else None
         self.car_df = self.fetch_data_from_db('car')
         self.rental_df = self.fetch_data_from_db('rentals')
         self.filtered_cars = None
         self.similarity_matrix = None
 
     def connect_to_db(self):
-        """Establish connection to MySQL database using SQLAlchemy."""
+        """Establish connection to MongoDB database."""
         try:
-            password = os.getenv("DB_PASSWORD", "")
-            encoded_password = password.replace("@", "%40") if password else ""
-            db_url = f"mysql+pymysql://{os.getenv('DB_USER')}:{encoded_password}@{os.getenv('DB_HOST')}/tripglide"
-            return create_engine(db_url, pool_pre_ping=True)
-        except SQLAlchemyError as e:
+            # Get MongoDB connection string from environment variables
+            mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
+            client = MongoClient(mongo_uri)
+            # Ping the server to verify connection
+            client.admin.command('ping')
+            print("Connected successfully to MongoDB")
+            return client
+        except ConnectionFailure as e:
             print(f"Database connection failed: {e}")
             return None
 
-    def fetch_data_from_db(self, table_name):
-        """Retrieve data from the specified table."""
-        query = f"SELECT * FROM {table_name}"
+    def fetch_data_from_db(self, collection_name):
+        """Retrieve data from the specified collection."""
         try:
-            with self.engine.connect() as connection:
-                return pd.read_sql(query, connection)
-        except SQLAlchemyError as e:
-            print(f"Failed to fetch data from {table_name}: {e}")
+            if self.client is None:
+                return pd.DataFrame()
+                
+            # Get all documents from the collection
+            collection = self.client['tripglide'][collection_name]
+            cursor = collection.find({})
+            
+            # Convert MongoDB cursor to DataFrame
+            df = pd.DataFrame(list(cursor))
+            
+            # Convert MongoDB _id to string if present
+            if '_id' in df.columns:
+                df['_id'] = df['_id'].astype(str)
+                
+            return df
+        except OperationFailure as e:
+            print(f"Failed to fetch data from {collection_name}: {e}")
             return pd.DataFrame()
 
     def check_user_exists(self, user_id, location):
@@ -46,7 +62,7 @@ class CarRecommendationSystem:
         location_condition = self.rental_df['Pickup_Location'].str.lower() == location.lower()
         
         # Filter rentals for this user and location
-        user_rentals = self.rental_df[(self.rental_df['UserID'] == int(user_id)) & location_condition]
+        user_rentals = self.rental_df[(self.rental_df['user_id'] == int(user_id)) & location_condition]
         
         return not user_rentals.empty
 
@@ -60,7 +76,7 @@ class CarRecommendationSystem:
         """Get list of valid car types from the database."""
         if self.car_df.empty:
             return ["SUV", "Sedan", "Hatchback", "Luxury"]
-        return sorted(self.car_df['CarType'].unique().tolist())
+        return sorted(self.car_df['Car Type'].unique().tolist())
 
     # Content-Based Filtering Methods
     def filter_by_location(self, user_city):
@@ -174,7 +190,7 @@ class CarRecommendationSystem:
         for make, cars in make_groups.items():
             if make not in used_makes:
                 for car in cars:
-                    if not any(car.equals(c) for c in recommended_cars):  # Fix Series comparison issue
+                    if not any(car.equals(c) for c in recommended_cars):
                         remaining_cars.append(car)
 
         recommended_cars.extend(remaining_cars[: 5 - len(recommended_cars)])
@@ -184,12 +200,12 @@ class CarRecommendationSystem:
             additional_cars = []
             for cars in make_groups.values():
                 for car in cars:
-                    if not any(car.equals(c) for c in recommended_cars):  # Fix Series comparison issue
+                    if not any(car.equals(c) for c in recommended_cars):
                         additional_cars.append(car)
 
             recommended_cars.extend(additional_cars[: 5 - len(recommended_cars)])
             
-        car_ids = [int(car["CarID"]) for car in recommended_cars]  # Convert NumPy int64 to Python int
+        car_ids = [int(car["Car_Id"]) for car in recommended_cars]  # Convert NumPy int64 to Python int
         return self.get_car_details(car_ids)
 
     # Collaborative Filtering Methods
@@ -211,7 +227,7 @@ class CarRecommendationSystem:
         if filtered_data.empty:
             return None
             
-        return filtered_data.pivot_table(index='UserID', columns='CarID', values='TravelCode', aggfunc='count').fillna(0)
+        return filtered_data.pivot_table(index='user_id', columns='Car_Id', values='travelCode', aggfunc='count').fillna(0)
 
     def compute_cf_similarity(self, user_car_matrix):
         """Compute item-based similarity matrix for collaborative filtering."""
@@ -249,12 +265,12 @@ class CarRecommendationSystem:
             return {"error": "No recommendations available based on user history."}
 
         # Filter recommendations from car_table
-        recommended_car_details = self.car_df[self.car_df["CarID"].isin(recommended_cars)].copy()
+        recommended_car_details = self.car_df[self.car_df["Car_Id"].isin(recommended_cars)].copy()
 
         # Group by Agency
         agency_groups = defaultdict(list)
         for _, row in recommended_car_details.iterrows():
-            agency_groups[row["Agency_Name"]].append(int(row["CarID"]))  # Convert NumPy int64 to Python int
+            agency_groups[row["Agency_Name"]].append(int(row["Car_Id"]))  # Convert NumPy int64 to Python int
 
         displayed_cars = []
         used_agencies = set()
@@ -271,9 +287,9 @@ class CarRecommendationSystem:
 
         # Step 3: If still fewer than 5, allow duplicates but keep balance
         if len(displayed_cars) < 5:
-            additional_cars = recommended_car_details[~recommended_car_details["CarID"].isin(displayed_cars)]
+            additional_cars = recommended_car_details[~recommended_car_details["Car_Id"].isin(displayed_cars)]
             additional_cars = additional_cars.sort_values("Rating", ascending=False)
-            displayed_cars.extend([int(car_id) for car_id in additional_cars["CarID"].tolist()[:5 - len(displayed_cars)]])
+            displayed_cars.extend([int(car_id) for car_id in additional_cars["Car_Id"].tolist()[:5 - len(displayed_cars)]])
 
         return self.get_car_details(displayed_cars)
 
@@ -284,23 +300,23 @@ class CarRecommendationSystem:
             # Handle list of car IDs
             car_details = []
             for cid in car_id:
-                car = self.car_df[self.car_df["CarID"] == cid]
+                car = self.car_df[self.car_df["Car_Id"] == cid]
                 if not car.empty:
                     car = car.iloc[0]
                     car_details.append({
-                        "id": int(car["CarID"]),
+                        "id": int(car["Car_Id"]),
                         "name": f"{car['Model']}",
-                        "car_type": car["CarType"],
-                        "fuel_policy": car["Fuel_Policy"],
+                        "car_type": car["Car Type"],
+                        "fuel_policy": car["Fuel Policy"],
                         "transmission": car["Transmission"],
-                        "price_per_hour": float(car["Price_Per_Hour"]),
-                        "price_per_day": float(car["Price_Per_Hour"]) * 24,
+                        "price_per_hour": float(car["Price per Hour (INR)"]),
+                        "price_per_day": float(car["Price per Hour (INR)"]) * 24,
                         "rating": float(car["Rating"]),
-                        "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
+                        "mileage_kmpl": float(car["Mileage (km/l)"]) if not pd.isna(car["Mileage (km/l)"]) else 0,
                         "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,
                         "ac": car["AC"],
-                        "unlimited_mileage": car.get("unlimited_mileage", 0),
-                        "luggage_capacity": int(car["Luggage_Capacity"]),
+                        "unlimited_mileage": car.get("Umlimited Mileage", 0),
+                        "luggage_capacity": int(car["Luggage Capacity"]),
                         "agency_name": car["Agency_Name"],
                         "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
                         "image_url": car["Image_URL"] if not pd.isna(car["Image_URL"]) else "",
@@ -308,23 +324,23 @@ class CarRecommendationSystem:
             return car_details
         else:
             # Handle single car ID
-            car = self.car_df[self.car_df["CarID"] == car_id]
+            car = self.car_df[self.car_df["Car_Id"] == car_id]
             if not car.empty:
                 car = car.iloc[0]
                 return {
-                    "id": int(car["CarID"]),
+                    "id": int(car["Car_Id"]),
                     "name": f"{car['Model']}",
-                    "car_type": car["CarType"],
-                    "fuel_policy": car["Fuel_Policy"],
+                    "car_type": car["Car Type"],
+                    "fuel_policy": car["Fuel Policy"],
                     "transmission": car["Transmission"],
-                    "price_per_hour": float(car["Price_Per_Hour"]),
-                    "price_per_day": float(car["Price_Per_Hour"]) * 24,
+                    "price_per_hour": float(car["Price per Hour (INR)"]),
+                    "price_per_day": float(car["Price per Hour (INR)"]) * 24,
                     "rating": float(car["Rating"]),
-                    "mileage_kmpl": float(car["Mileage_kmpl"]) if not pd.isna(car["Mileage_kmpl"]) else 0,
+                    "mileage_kmpl": float(car["Mileage (km/l)"]) if not pd.isna(car["Mileage (km/l)"]) else 0,
                     "occupancy": int(car["Occupancy"]) if not pd.isna(car["Occupancy"]) else 0,
                     "ac": car["AC"],
-                    "unlimited_mileage": car.get("unlimited_mileage", 0),
-                    "luggage_capacity": int(car["Luggage_Capacity"]),
+                    "unlimited_mileage": car.get("Umlimited Mileage", 0),
+                    "luggage_capacity": int(car["Luggage Capacity"]),
                     "agency_name": car["Agency_Name"],
                     "base_fare": float(car["Base_Fare"]) if not pd.isna(car["Base_Fare"]) else 0,
                     "image_url": car["Image_URL"] if not pd.isna(car["Image_URL"]) else "",
