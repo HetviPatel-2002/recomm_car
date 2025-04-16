@@ -135,7 +135,7 @@ def confirm_booking(car_id):
     rental_days = request.args.get('days', 1, type=int)
     
     # Calculate total cost
-    total_cost = float(car_details['price_per_day']) * rental_days
+    total_cost = int(car_details['price_per_day']) * rental_days
     
     return render_template('confirmation.html', 
                           car=car_details,
@@ -159,7 +159,7 @@ def payment_page(car_id):
     rental_days = request.args.get('days', 1, type=int)
     
     # Calculate total amount
-    total_amount = float(car_details['price_per_day']) * rental_days
+    total_amount = int(car_details['price_per_day']) * rental_days
     
     return render_template('payment.html', 
                           car=car_details, 

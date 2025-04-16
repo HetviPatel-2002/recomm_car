@@ -99,7 +99,7 @@ class CarRecommendationSystem:
         ac_required = ac_required.strip().lower() if ac_required else "yes"
         unlimited_mileage = unlimited_mileage.strip().lower() if unlimited_mileage else "yes"
 
-        valid_types = set(self.car_df["CarType"].str.lower().unique())
+        valid_types = set(self.car_df["Car Type"].str.lower().unique())
         if preferred_type.lower() not in valid_types:
             return {"error": f"Invalid Car Type. Choose from {', '.join(self.get_valid_car_types())}."}
         
@@ -109,7 +109,7 @@ class CarRecommendationSystem:
             return {"error": "Invalid price input. Please enter a numeric value."}
 
         # Get the minimum price in the dataset
-        min_price = self.car_df["Price_Per_Hour"].min()
+        min_price = self.car_df["Price per Hour (INR)"].min()
 
         if max_price < min_price:
             return {"error": f"No cars available under ₹{max_price}/hour. The lowest price available is ₹{min_price}/hour."}
@@ -122,10 +122,10 @@ class CarRecommendationSystem:
 
         # Apply filtering
         self.filtered_cars = self.filtered_cars[
-            (self.filtered_cars["CarType"].str.lower() == preferred_type.lower()) &
-            (self.filtered_cars["Price_Per_Hour"] <= max_price) &
+            (self.filtered_cars["Car Type"].str.lower() == preferred_type.lower()) &
+            (self.filtered_cars["Price per Hour (INR)"] <= max_price) &
             (self.filtered_cars["AC"].str.lower() == ac_required) &
-            (self.filtered_cars["Unlimited_Mileage"].str.lower() == unlimited_mileage)
+            (self.filtered_cars["Umlimited Mileage"].str.lower() == unlimited_mileage)
         ]
 
         if self.filtered_cars.empty:
@@ -138,7 +138,7 @@ class CarRecommendationSystem:
         if self.filtered_cars is None or self.filtered_cars.empty:
             return {"error": "No cars available for computing similarity."}
             
-        features = ["Make", "Model", "CarType", "Transmission", "Fuel_Policy"]
+        features = ["Make", "Model", "Car Type", "Transmission", "Fuel Policy"]
 
         # Ensure a copy to avoid `SettingWithCopyWarning`
         self.filtered_cars = self.filtered_cars.copy()
