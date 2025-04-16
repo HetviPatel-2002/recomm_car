@@ -246,7 +246,7 @@ def payment_success():
     
     car_id = booking.get('car_id')
     car_details = recommender.get_car_details(car_id)
-    
+    print(car_details)
     return render_template('payment_success.html',
                           booking_reference=booking.get('reference'),
                           car=car_details,

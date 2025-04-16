@@ -364,7 +364,9 @@ select:focus, input:focus {
 
 .price-tag {
     background-color: var(--accent-color);
+    /* background-color: #ffffff; */
     color: white;
+    /* color: #032b44; */
     padding: 8px 12px;
     border-radius: var(--radius);
     display: inline-block;
@@ -466,6 +468,10 @@ select:focus, input:focus {
     font-weight: 600;
 }
 
+.booking-details-info .price-tag{
+    background-color:#f8f9fa ;
+    color: #555555;
+}
 .car-features {
     margin-top: 20px;
     background-color: white;
@@ -593,7 +599,7 @@ footer {
     }
     
     .car-details {
-        grid-template-columns: 1fr;
+        grid-template-columns: 0.8fr;
     }
     
     .price-booking {
@@ -641,15 +647,67 @@ footer {
 
 @media (max-width: 480px) {
     .container {
-        padding: 10px;
-        margin: 10px;
+        /* padding: 10px; */
+        margin: 20px;
     }
     
     header h1 {
         font-size: 1.5rem;
     }
     
-    .car-card h3 {
-        font-size: 1.2rem;
+    .car-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+    
+    .success-note p {
+        font-size: 1rem;
+    }
+}   
+
+@media (max-width: 410px) {
+    .container {
+        padding: 10px;
+        margin: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .car-card {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .car-card select,
+    .car-card button {
+        width: 90%;
+        margin: 0 auto 10px auto;
+    }
+
+    /* .car-card img {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+    } */
+
+    .booking-details-info {
+        min-width: 250px;
+        margin: 0 auto;
+        width: 90%;
+    }
+
+    .success-note p {
+        display: none;
     }
 }
+
+
