@@ -6,6 +6,9 @@ from pymongo.errors import ConnectionFailure, OperationFailure
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class CarRecommendationSystem:
     def __init__(self):
@@ -21,8 +24,8 @@ class CarRecommendationSystem:
         """Establish connection to MongoDB database."""
         try:
             # Get MongoDB connection string from environment variables
-            mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
-            client = MongoClient(mongo_uri)
+            mongo_uri = os.getenv('MONGO_URI')
+            client = MongoClient("mongodb://localhost:27017/")
             # Ping the server to verify connection
             client.admin.command('ping')
             print("Connected successfully to MongoDB")
@@ -30,6 +33,7 @@ class CarRecommendationSystem:
         except ConnectionFailure as e:
             print(f"Database connection failed: {e}")
             return None
+
 
     def fetch_data_from_db(self, collection_name):
         """Retrieve data from the specified collection."""
@@ -44,6 +48,7 @@ class CarRecommendationSystem:
             # Convert MongoDB cursor to DataFrame
             df = pd.DataFrame(list(cursor))
             
+            
             # Convert MongoDB _id to string if present
             if '_id' in df.columns:
                 df['_id'] = df['_id'].astype(str)
@@ -52,7 +57,7 @@ class CarRecommendationSystem:
         except OperationFailure as e:
             print(f"Failed to fetch data from {collection_name}: {e}")
             return pd.DataFrame()
-
+# print(df)
     def check_user_exists(self, user_id, location):
         """Check if the user exists in the database for the given location."""
         if self.rental_df.empty:
@@ -346,3 +351,9 @@ class CarRecommendationSystem:
                     "image_url": car["Image_URL"] if not pd.isna(car["Image_URL"]) else "",
                 }
             return None
+        
+
+# Car = CarRecommendationSystem()
+# car_data = Car.fetch_data_from_db('car')
+# print("Car Data:")
+# print(car_data)

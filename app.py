@@ -6,11 +6,22 @@ import os
 import stripe
 import uuid
 from dotenv import load_dotenv
+from datetime import datetime
+from flask_mail import Mail, Message
 
 load_dotenv()
 
 # Create Flask application
 app = Flask(__name__)
+# Flask-Mail SMTP configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')  # Gmail email
+app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')  # App password
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
+
+mail = Mail(app)
 
 # Secret key for session management
 app.secret_key = os.urandom(24)
@@ -130,7 +141,7 @@ def confirm_booking(car_id):
     car_details = recommender.get_car_details(car_id)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
-    # print("Car details:", car_details)
+    
     # Get rental days from query params or default to 1
     rental_days = request.args.get('days', 1, type=int)
     
@@ -151,7 +162,6 @@ def payment_page(car_id):
         return jsonify({"error": "Invalid car ID format"}), 400
     # Retrieve car details from recommendation system
     car_details = recommender.get_car_details(car_id)
-    print("payment car details:",car_details)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
     
@@ -171,13 +181,11 @@ def payment_page(car_id):
 def create_payment_intent():
     """Create a PaymentIntent for Stripe."""
     data = request.get_json()
-    print("data",data)
     car_id = int(data.get('car_id'))
     rental_days = data.get('rental_days', 1)
     
     # Get car details
     car_details = recommender.get_car_details(car_id)
-    print("car_details in create payment intent page",car_details)
     if not car_details:
         return jsonify({"error": "Car not found"}), 404
     
@@ -191,7 +199,8 @@ def create_payment_intent():
             currency='inr',
             metadata={
                 'car_id': car_id,
-                'rental_days': rental_days
+                'rental_days': rental_days,
+                'amount': amount
             }
         )
         
@@ -211,23 +220,72 @@ def create_payment_intent():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+@app.route('/update_payment_intent', methods=['POST'])
+def update_payment_intent():
+    """Update a PaymentIntent with customer email."""
+    data = request.get_json()
+    client_secret = data.get('client_secret')
+    email = data.get('email')
+    
+    current_time = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    
+    if not client_secret or not email:
+        return jsonify({"error": "Missing required parameters"}), 400
+    
+    # Extract the payment intent ID from the client secret
+    try:
+        # Client secret format is usually: pi_XXX_secret_YYY
+        # We need the pi_XXX part
+        payment_intent_id = client_secret.split('_secret_')[0]
+        
+        # Update the payment intent with the email
+        intent = stripe.PaymentIntent.modify(
+            payment_intent_id,
+            receipt_email=email,
+            metadata={'customer_email': email, 'payment_date': current_time}
+        )
+        
+        # Update session data
+        if 'booking' in session:
+            session['booking']['email'] = email
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/process_payment', methods=['POST'])
 def process_payment():
     """Process payment confirmation from client."""
     data = request.get_json()
     payment_intent_id = data.get('payment_intent_id')
+    email = data.get('email')
     
     try:
         # Retrieve the payment intent to confirm it's succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
         
         if intent.status == 'succeeded':
-            # You could save booking details to database here
+            # Update booking with email if provided
+            if email and 'booking' in session:
+                session['booking']['email'] = email
+            
+            # Get the car details and rental information for the email receipt
+            car_id = intent.metadata.get('car_id')
+            rental_days = intent.metadata.get('rental_days')
+            amount = intent.amount  # Amount in cents
+            
+            # Send email receipt
+            if email:
+                try:
+                    send_receipt_email(email, car_id, rental_days, amount)
+                except Exception as e:
+                    print(f"Failed to send email receipt: {str(e)}")
             
             return jsonify({
                 'success': True,
                 'redirect': url_for('payment_success')
             })
+        
         else:
             return jsonify({
                 'success': False,
@@ -246,12 +304,44 @@ def payment_success():
     
     car_id = booking.get('car_id')
     car_details = recommender.get_car_details(car_id)
-    print(car_details)
+    
     return render_template('payment_success.html',
                           booking_reference=booking.get('reference'),
                           car=car_details,
                           days=booking.get('rental_days'),
-                          amount=booking.get('amount'))
+                          amount=booking.get('amount'),
+                          email=booking.get('email'))
+
+def send_receipt_email(email, car_id, rental_days, amount):
+    """Send payment receipt email to customer."""
+    # Get car details
+    car_details = recommender.get_car_details(int(car_id))
+    car_name = car_details.get('name', 'Unknown Car')
+    
+    # Format amount from cents to currency
+    formatted_amount = float(amount) / 100
+    
+    # Generate current time for receipt
+    payment_date = datetime.now().strftime("%d/%m/%Y, %H:%M:%S")
+    
+    sender_email=os.environ.get('EMAIL_USER')
+    # Create message
+    msg = Message(subject="✅ Car Rental Payment Receipt",sender=sender_email,
+                  recipients=[email])
+    
+    msg.body = (
+        f"Thank you for your payment!\n\n"
+        f"🔹 Car: {car_name} (ID: {car_id})\n"
+        f"🔹 Rental Duration: {rental_days} day(s)\n"
+        f"🔹 Amount Paid: ₹{formatted_amount:.2f}\n"
+        f"🔹 Payment Date: {payment_date}\n\n"
+        f"Enjoy your ride! 🚗"
+    )
+    
+    # Send email
+    mail.send(msg)
+    
+    return True
 
 if __name__ == '__main__':
     app.run(debug=True)

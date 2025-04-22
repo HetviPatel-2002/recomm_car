@@ -1,3 +1,4 @@
+// import emailjs from 'emailjs-com';
 // Global variables
 let currentStep = 1;
 let currentUserId = null;

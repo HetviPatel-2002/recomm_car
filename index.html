@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripGlide - Car Recommendations</title>
+    
+    <!-- Relative Path for CSS -->
+    <link rel="stylesheet" href="./static/css/style.css">
+    
+    <!-- FontAwesome and Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header>
+            <h1>TripGlide Car Recommendations</h1>
+            <p>Find the perfect car for your journey</p>
+        </header>
+
+        <main>
+            <!-- Step 1: User ID and Location Form -->
+            <div id="step1" class="step active">
+                <div class="card">
+                    <h2>Tell us about yourself</h2>
+                    <form id="userForm">
+                        <div class="form-group">
+                            <label for="userId">User ID</label>
+                            <input type="text" id="userId" name="userId" placeholder="Enter your user ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="location">Pickup Location</label>
+                            <select id="location" name="location">
+                                <option value="">-- Select a location --</option>
+                                <!-- Locations will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-block">Find Cars</button>
+                    </form>
+                    <div id="step1Error" class="error-message"></div>
+                    <div id="step1Loader" class="loader">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: User Preferences (For new users) -->
+            <div id="step2" class="step">
+                <div class="card">
+                    <h2>Your Preferences</h2>
+                    <form id="preferencesForm">
+                        <div class="form-group">
+                            <label for="carType">Preferred Car Type</label>
+                            <select id="carType" name="carType" required>
+                                <option value="">-- Select car type --</option>
+                                <!-- Car types will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="maxPrice">Maximum Price per Hour (₹)</label>
+                            <input type="number" id="maxPrice" name="maxPrice" placeholder="Enter maximum price" value="1000">
+                        </div>
+                        <div class="form-group">
+                            <label for="acRequired">Air Conditioning</label>
+                            <select id="acRequired" name="acRequired">
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="unlimitedMileage">Unlimited Mileage</label>
+                            <select id="unlimitedMileage" name="unlimitedMileage">
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-block">Get Recommendations</button>
+                        <button type="button" class="btn btn-block back-btn" onclick="goToStep(1)">Back</button>
+                    </form>
+                    <div id="step2Error" class="error-message"></div>
+                    <div id="step2Loader" class="loader">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Recommendations -->
+            <div id="step3" class="step">
+                <div class="card">
+                    <h2>Recommended Cars</h2>
+                    <div id="recommendationsContainer"></div>
+                    <button type="button" class="btn btn-block back-btn" onclick="goToStep(1)">Start Over</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 TripGlide Car Rentals. All rights reserved.</p>
+    </footer>
+
+    <!-- Relative Path for JavaScript -->
+    <script src="./static/js/main.js"></script>
+</body>
+</html>

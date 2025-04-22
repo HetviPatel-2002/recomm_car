@@ -371,7 +371,7 @@ select:focus, input:focus {
     border-radius: var(--radius);
     display: inline-block;
     font-weight: 600;
-    margin-bottom: 15px;
+    /* margin-bottom: 15px; */
 }
 
 .booking-options {
@@ -710,4 +710,38 @@ footer {
     }
 }
 
+/* Email input styles */
+.form-group {
+    margin-bottom: 20px;
+}
 
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.form-group input[type="email"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.form-group input[type="email"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.15);
+}
+
+.form-group input[type="email"]::placeholder {
+    color: #aaa;
+}
+
+/* Email icon styling */
+.form-group label i {
+    margin-right: 8px;
+    color: var(--primary-color);
+}
