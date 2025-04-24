@@ -403,7 +403,7 @@ class CarRecommendationSystem:
             
             # Insert into database
             self.db['user'].insert_one(new_user)
-            
+            print("details added:",new_user)
             return new_user_id
             
         except Exception as e:
@@ -419,7 +419,7 @@ class CarRecommendationSystem:
         """
         try:
             # Get the max travel code
-            max_travel = self.db['Rentals'].find_one(sort=[("travelCode", -1)])
+            max_travel = self.db['rentals'].find_one(sort=[("travelCode", -1)])
             
             if max_travel:
                 return max_travel['travelCode']
@@ -441,7 +441,7 @@ class CarRecommendationSystem:
         """
         try:
             # Get the next available travel code
-            max_travel = self.db['Rentals'].find_one(sort=[("travelCode", -1)])
+            max_travel = self.db['rentals'].find_one(sort=[("travelCode", -1)])
             
             if max_travel:
                 new_travel_code = max_travel['travelCode'] + 1
@@ -450,9 +450,9 @@ class CarRecommendationSystem:
                 
             # Add travel code to rental data
             rental_data['travelCode'] = new_travel_code
-            
+            print("rental_data to be added:",rental_data)
             # Insert into database
-            self.db['Rentals'].insert_one(rental_data)
+            self.db['rentals'].insert_one(rental_data)
             
             return True
             
