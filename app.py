@@ -59,11 +59,19 @@ def check_user():
     name = data.get('name')
     email = data.get('email')
     location = data.get('location')
+    print("check_user function's data:", name, email, location)
     
     if not name or not email or not location:
         return jsonify({"error": "Name, email, and location are required"}), 400
 
     try:
+        # Store the user info in the session for later use
+        session['user_info'] = {
+            'name': name,
+            'email': email,
+            'location': location
+        }
+        
         user_result = recommender.check_user_exists(name, email, location)
             
         if "error" in user_result:
@@ -77,6 +85,9 @@ def check_user():
             })
         
         # User exists, check if they have rentals
+        # Also store the user_id in the session
+        session['user_info']['user_id'] = user_result["user_id"]
+        
         return jsonify({
             "user_exists": user_result["has_rentals"],
             "location": location,
@@ -198,6 +209,12 @@ def create_payment_intent():
     car_id = int(data.get('car_id'))
     rental_days = data.get('rental_days', 1)
     
+    # Get user information from session
+    user_info = session.get('user_info', {})
+    name = user_info.get('name', '')
+    email = user_info.get('email', '')
+    location = user_info.get('location', '')
+    
     # Get car details
     car_details = recommender.get_car_details(car_id)
     if not car_details:
@@ -214,7 +231,10 @@ def create_payment_intent():
             metadata={
                 'car_id': car_id,
                 'rental_days': rental_days,
-                'amount': amount
+                'amount': amount,
+                'user_name': name,
+                'user_email': email,
+                'pickup_location': location
             }
         )
         
@@ -224,7 +244,10 @@ def create_payment_intent():
             'reference': booking_reference,
             'car_id': car_id,
             'rental_days': rental_days,
-            'amount': amount / 100  # Convert back to rupees for display
+            'amount': amount / 100,  # Convert back to rupees for display
+            'name': name,
+            'email': email,
+            'location': location
         }
         
         return jsonify({
@@ -274,22 +297,26 @@ def process_payment():
     print(data)
     payment_intent_id = data.get('payment_intent_id')
     email = data.get('email')
-    name = data.get('name', '')
-    location = data.get('location', '')
+    
+    # Get user information from session if available
+    user_info = session.get('user_info', {})
+    name = data.get('name') or user_info.get('name', '')
+    location = data.get('location') or user_info.get('location', '')
+    email = email or user_info.get('email', '')
     
     try:
         # Retrieve the payment intent to confirm it's succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        print("session_details before:",session)
+        
         if intent.status == 'succeeded':
-            # Update booking with email and name if provided
-            if email and 'booking' in session:
-                session['booking']['email'] = email
-            if name and 'booking' in session:
-                session['booking']['name'] = name
-            if location and 'booking' in session:
-                session['booking']['location'] = location
-            print("session_details before:",session) 
+            # Update booking with email, name, and location
+            if 'booking' not in session:
+                session['booking'] = {}
+                
+            session['booking']['email'] = email
+            session['booking']['name'] = name
+            session['booking']['location'] = location
+
             # Get the car details and rental information
             car_id = int(intent.metadata.get('car_id'))
             rental_days = int(intent.metadata.get('rental_days'))
@@ -298,11 +325,6 @@ def process_payment():
             # Record the booking in the database
             try:
                 # Check if user exists and create if needed
-                user_info = {
-                    'name': name,
-                    'email': email
-                }
-                
                 user_result = recommender.check_user_exists(name, email, location)
                 user_id = None
                 
