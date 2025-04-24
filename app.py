@@ -6,7 +6,7 @@ import os
 import stripe
 import uuid
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask_mail import Mail, Message
 
 load_dotenv()
@@ -271,6 +271,7 @@ def update_payment_intent():
 def process_payment():
     """Process payment confirmation from client."""
     data = request.get_json()
+    print(data)
     payment_intent_id = data.get('payment_intent_id')
     email = data.get('email')
     name = data.get('name', '')
@@ -279,7 +280,7 @@ def process_payment():
     try:
         # Retrieve the payment intent to confirm it's succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
-        
+        print("session_details before:",session)
         if intent.status == 'succeeded':
             # Update booking with email and name if provided
             if email and 'booking' in session:
@@ -288,7 +289,7 @@ def process_payment():
                 session['booking']['name'] = name
             if location and 'booking' in session:
                 session['booking']['location'] = location
-            
+            print("session_details before:",session) 
             # Get the car details and rental information
             car_id = int(intent.metadata.get('car_id'))
             rental_days = int(intent.metadata.get('rental_days'))
