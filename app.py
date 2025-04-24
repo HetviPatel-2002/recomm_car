@@ -56,19 +56,33 @@ def get_car_types():
 def check_user():
     """Check if user exists and determine recommendation method."""
     data = request.get_json()
-    user_id = data.get('user_id')
+    name = data.get('name')
+    email = data.get('email')
     location = data.get('location')
     
-    if not user_id or not location:
-        return jsonify({"error": "User ID and location are required"}), 400
-        
+    if not name or not email or not location:
+        return jsonify({"error": "Name, email, and location are required"}), 400
+
     try:
-        user_exists = recommender.check_user_exists(user_id, location)
+        user_result = recommender.check_user_exists(name, email, location)
+            
+        if "error" in user_result:
+            return jsonify({"error": user_result["error"]}), 500
+            
+        if not user_result["exists"]:
+            # User doesn't exist in the system
+            return jsonify({
+                "user_exists": False,
+                "location": location
+            })
+        
+        # User exists, check if they have rentals
         return jsonify({
-            "user_exists": user_exists,
+            "user_exists": user_result["has_rentals"],
             "location": location,
-            "user_id": user_id
+            "user_id": user_result["user_id"]
         })
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -259,20 +273,84 @@ def process_payment():
     data = request.get_json()
     payment_intent_id = data.get('payment_intent_id')
     email = data.get('email')
+    name = data.get('name', '')
+    location = data.get('location', '')
     
     try:
         # Retrieve the payment intent to confirm it's succeeded
         intent = stripe.PaymentIntent.retrieve(payment_intent_id)
         
         if intent.status == 'succeeded':
-            # Update booking with email if provided
+            # Update booking with email and name if provided
             if email and 'booking' in session:
                 session['booking']['email'] = email
+            if name and 'booking' in session:
+                session['booking']['name'] = name
+            if location and 'booking' in session:
+                session['booking']['location'] = location
             
-            # Get the car details and rental information for the email receipt
-            car_id = intent.metadata.get('car_id')
-            rental_days = intent.metadata.get('rental_days')
+            # Get the car details and rental information
+            car_id = int(intent.metadata.get('car_id'))
+            rental_days = int(intent.metadata.get('rental_days'))
             amount = intent.amount  # Amount in cents
+            
+            # Record the booking in the database
+            try:
+                # Check if user exists and create if needed
+                user_info = {
+                    'name': name,
+                    'email': email
+                }
+                
+                user_result = recommender.check_user_exists(name, email, location)
+                user_id = None
+                
+                if not user_result["exists"]:
+                    # Create new user
+                    user_id = recommender.create_new_user(name, email)
+                else:
+                    user_id = user_result["user_id"]
+                
+                # Record the rental
+                if user_id is not None:
+                    # Generate rental dates
+                    rental_date = datetime.now()
+                    return_date = rental_date + timedelta(days=rental_days)
+                    
+                    # Format dates as required
+                    rental_date_str = rental_date.strftime("%d-%m-%Y %H:%M")
+                    return_date_str = return_date.strftime("%d-%m-%Y %H:%M")
+                    
+                    # Calculate duration in hours and minutes
+                    duration_hours = rental_days * 24
+                    total_minutes = duration_hours * 60
+                    
+                    # Save rental record
+                    rental_data = {
+                        'user_id': user_id,
+                        'Pickup_Location': location,
+                        'rental_date': rental_date_str,
+                        'duration': rental_days,
+                        'return_date': return_date_str,
+                        'Car_Id': car_id,
+                        'total_amount': int(amount / 100),  # Convert cents to rupees
+                        'Duration_Hours': duration_hours,
+                        'Total_Minutes': total_minutes,
+                        'Days': rental_days,
+                        'Hours': 0,
+                        'Formatted_Duration': f"{rental_days} days 0 hours",
+                        'Duration_Days': rental_days
+                    }
+                    
+                    recommender.record_rental(rental_data)
+                    
+                    # Store travel code in session if available
+                    travel_code = recommender.get_last_travel_code()
+                    if travel_code is not None:
+                        session['booking']['travel_code'] = travel_code
+            
+            except Exception as e:
+                print(f"Failed to record booking: {str(e)}")
             
             # Send email receipt
             if email:
@@ -307,10 +385,12 @@ def payment_success():
     
     return render_template('payment_success.html',
                           booking_reference=booking.get('reference'),
+                          travel_code=booking.get('travel_code'),
                           car=car_details,
                           days=booking.get('rental_days'),
                           amount=booking.get('amount'),
-                          email=booking.get('email'))
+                          email=booking.get('email'),
+                          name=booking.get('name'))
 
 def send_receipt_email(email, car_id, rental_days, amount):
     """Send payment receipt email to customer."""

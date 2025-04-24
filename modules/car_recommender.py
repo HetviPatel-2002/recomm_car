@@ -58,18 +58,37 @@ class CarRecommendationSystem:
             print(f"Failed to fetch data from {collection_name}: {e}")
             return pd.DataFrame()
 # print(df)
-    def check_user_exists(self, user_id, location):
-        """Check if the user exists in the database for the given location."""
-        if self.rental_df.empty:
-            return False
-        
-        # Convert location strings to lowercase for case-insensitive comparison
-        location_condition = self.rental_df['Pickup_Location'].str.lower() == location.lower()
-        
-        # Filter rentals for this user and location
-        user_rentals = self.rental_df[(self.rental_df['user_id'] == int(user_id)) & location_condition]
-        
-        return not user_rentals.empty
+    def check_user_exists(self, name, email, location):
+        """Check if the user exists in the database and return their user_id if found."""
+        try:
+            # First, check if the user exists in the users collection
+            if self.client is None:
+                return {"exists": False, "error": "Database connection not available"}
+            
+            users_collection = self.client['tripglide']['user']
+            user = users_collection.find_one({"name": name, "email": email})
+            
+            if not user:
+                return {"exists": False, "user_id": None}
+            
+            user_id = user.get('user_id')
+            
+            # Now check if this user has any rentals at the given location
+            if self.rental_df.empty:
+                return {"exists": True, "user_id": user_id, "has_rentals": False}
+            
+            location_condition = self.rental_df['Pickup_Location'].str.lower() == location.lower()
+            user_rentals = self.rental_df[(self.rental_df['user_id'] == int(user_id)) & location_condition]
+            
+            return {
+                "exists": True, 
+                "user_id": user_id,
+                "has_rentals": not user_rentals.empty
+            }
+            
+        except Exception as e:
+            print(f"Error checking user: {e}")
+            return {"exists": False, "error": str(e)}
 
     def get_valid_locations(self):
         """Get list of valid locations from the database."""
@@ -351,7 +370,95 @@ class CarRecommendationSystem:
                     "image_url": car["Image_URL"] if not pd.isna(car["Image_URL"]) else "",
                 }
             return None
+    def create_new_user(self, name, email, gender='unknown', age=30):
+        """
+        Create a new user in the database.
         
+        Args:
+            name (str): User's name
+            email (str): User's email
+            gender (str, optional): User's gender. Defaults to 'unknown'.
+            age (int, optional): User's age. Defaults to 30.
+            
+        Returns:
+            int: The newly created user_id
+        """
+        try:
+            # Get the next available user_id
+            max_user_id = self.db['user'].find_one(sort=[("user_id", -1)])
+            
+            if max_user_id:
+                new_user_id = max_user_id['user_id'] + 1
+            else:
+                new_user_id = 0
+                
+            # Create new user document
+            new_user = {
+                'user_id': new_user_id,
+                'name': name,
+                'gender': gender,
+                'age': age,
+                'email': email
+            }
+            
+            # Insert into database
+            self.db['user'].insert_one(new_user)
+            
+            return new_user_id
+            
+        except Exception as e:
+            print(f"Error creating new user: {str(e)}")
+            return None
+
+    def get_last_travel_code(self):
+        """
+        Get the last travel code from the Rentals collection.
+        
+        Returns:
+            int: The next available travel code
+        """
+        try:
+            # Get the max travel code
+            max_travel = self.db['Rentals'].find_one(sort=[("travelCode", -1)])
+            
+            if max_travel:
+                return max_travel['travelCode']
+            return 0
+            
+        except Exception as e:
+            print(f"Error getting last travel code: {str(e)}")
+            return None
+
+    def record_rental(self, rental_data):
+        """
+        Record a new rental in the database.
+        
+        Args:
+            rental_data (dict): The rental information
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Get the next available travel code
+            max_travel = self.db['Rentals'].find_one(sort=[("travelCode", -1)])
+            
+            if max_travel:
+                new_travel_code = max_travel['travelCode'] + 1
+            else:
+                new_travel_code = 0
+                
+            # Add travel code to rental data
+            rental_data['travelCode'] = new_travel_code
+            
+            # Insert into database
+            self.db['Rentals'].insert_one(rental_data)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error recording rental: {str(e)}")
+            return False    
 
 # Car = CarRecommendationSystem()
 # car_data = Car.fetch_data_from_db('car')

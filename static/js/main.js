@@ -1,9 +1,8 @@
-// import emailjs from 'emailjs-com';
 // Global variables
 let currentStep = 1;
 let currentUserId = null;
 let currentLocation = null;
-let isExistingUser = false;
+let hasRentalHistory = false;  // Renamed from isExistingUser for clarity
 
 // DOM elements
 const userForm = document.getElementById('userForm');
@@ -23,32 +22,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 userForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    const userId = document.getElementById('userId').value.trim();
+    
+    // Show loader and hide error message
+    document.getElementById('step1Loader').style.display = 'block';
+    document.getElementById('step1Error').style.display = 'none';
+    
+    // Get form values
+    const userName = document.getElementById('userName').value.trim();
+    const userEmail = document.getElementById('userEmail').value.trim();
     const location = locationSelect.value;
-
-    if (!location) {
-        showError('step1Error', 'Please select a pickup location');
+    
+    // Validate form inputs
+    if (!userName || !userEmail || !location) {
+        showError('step1Error', 'Please fill in all fields');
+        hideLoader('step1Loader');
         return;
     }
-
-    if (userId) {
-        // User provided ID, check if they exist
-        checkUser(userId, location);
-    } else {
-        // New user, ask for preferences
-        currentUserId = null;
-        currentLocation = location;
-        isExistingUser = false;
-        goToStep(2);
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+        showError('step1Error', 'Please enter a valid email address');
+        hideLoader('step1Loader');
+        return;
     }
+    
+    // Check if user exists in the system
+    checkUser(userName, userEmail, location);
 });
 
 preferencesForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const carType = carTypeSelect.value;
     const maxPrice = document.getElementById('maxPrice').value;
-    const acRequired = document.getElementById('acRequired').value;
-    const unlimitedMileage = document.getElementById('unlimitedMileage').value;
+    const acRequired = document.getElementById('acRequired').checked;
+    const unlimitedMileage = document.getElementById('unlimitedMileage').checked;
 
     if (!carType) {
         showError('step2Error', 'Please select a car type');
@@ -105,14 +113,17 @@ function fetchCarTypes() {
         });
 }
 
-function checkUser(userId, location) {
-    showLoader('step1Loader');
+function checkUser(userName, userEmail, location) {
     fetch('/api/check_user', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId, location: location }),
+        body: JSON.stringify({
+            name: userName,
+            email: userEmail,
+            location: location 
+        }),
     })
     .then(response => response.json())
     .then(data => {
@@ -122,15 +133,26 @@ function checkUser(userId, location) {
             return;
         }
         
-        currentUserId = userId;
         currentLocation = location;
-        isExistingUser = data.user_exists;
         
-        if (isExistingUser) {
-            // Existing user - get collaborative recommendations
-            getCollaborativeRecommendations(userId, location);
+        // Store selected location in sessionStorage
+        sessionStorage.setItem('selectedLocation', location);
+        
+        if (data.user_exists) {
+            // User exists and has rental history - get collaborative recommendations
+            currentUserId = data.user_id;
+            hasRentalHistory = true;
+            sessionStorage.setItem('userId', data.user_id);
+            
+            getCollaborativeRecommendations(currentUserId, location);
         } else {
-            // User ID exists but not at this location, ask for preferences
+            // User doesn't exist or has no rental history - go to preferences form
+            if (data.user_id) {
+                // User exists but no rental history
+                currentUserId = data.user_id;
+                sessionStorage.setItem('userId', data.user_id);
+            }
+            hasRentalHistory = false;
             goToStep(2);
         }
     })
@@ -152,7 +174,8 @@ function getContentRecommendations(location, carType, maxPrice, acRequired, unli
             car_type: carType,
             max_price: maxPrice,
             ac_required: acRequired,
-            unlimited_mileage: unlimitedMileage
+            unlimited_mileage: unlimitedMileage,
+            user_id: currentUserId // Send user_id if available
         }),
     })
     .then(response => response.json())
@@ -187,8 +210,13 @@ function getCollaborativeRecommendations(userId, location) {
     .then(response => response.json())
     .then(data => {
         hideLoader('step1Loader');
+        
         if (data.error) {
-            showError('step1Error', data.error);
+            // If collaborative filtering fails, fall back to preferences-based approach
+            showError('step1Error', `${data.error}. We'll find cars based on your preferences instead.`);
+            setTimeout(() => {
+                goToStep(2);
+            }, 2000);
             return;
         }
         
@@ -198,6 +226,10 @@ function getCollaborativeRecommendations(userId, location) {
     .catch(error => {
         hideLoader('step1Loader');
         showError('step1Error', 'Error getting recommendations: ' + error.message);
+        // Fall back to preferences-based approach
+        setTimeout(() => {
+            goToStep(2);
+        }, 2000);
     });
 }
 
@@ -283,6 +315,7 @@ function displayRecommendations(recommendations) {
         });
     });
 }
+
 function goToStep(step) {
     // Hide all steps
     document.querySelectorAll('.step').forEach(el => {

@@ -17,18 +17,22 @@
         </header>
 
        <main>
-         <!-- Step 1: User ID and Location Form -->
-         <div id="step1" class="step active">
+         <!-- Step 1: User Name, Email and Location Form -->
+        <div id="step1" class="step active">
             <div class="card">
                 <h2>Tell us about yourself</h2>
                 <form id="userForm">
                     <div class="form-group">
-                        <label for="userId">User ID</label>
-                        <input type="text" id="userId" name="userId" placeholder="Enter your user ID">
+                        <label for="userName"><i class="fas fa-user"></i> Your Name</label>
+                        <input type="text" id="userName" name="userName" placeholder="Enter your full name" required>
                     </div>
                     <div class="form-group">
-                        <label for="location">Pickup Location</label>
-                        <select id="location" name="location">
+                        <label for="userEmail"><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" id="userEmail" name="userEmail" placeholder="Enter your email address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="location"><i class="fas fa-map-marker-alt"></i> Pickup Location</label>
+                        <select id="location" name="location" required>
                             <option value="">-- Select a location --</option>
                             <!-- Locations will be loaded dynamically -->
                         </select>
