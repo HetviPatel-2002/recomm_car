@@ -25,7 +25,7 @@ class CarRecommendationSystem:
         try:
             # Get MongoDB connection string from environment variables
             mongo_uri = os.getenv('MONGO_URI')
-            client = MongoClient("mongodb://localhost:27017/")
+            client = MongoClient(mongo_uri)
             # Ping the server to verify connection
             client.admin.command('ping')
             print("Connected successfully to MongoDB")
@@ -385,7 +385,7 @@ class CarRecommendationSystem:
         """
         try:
             # Get the next available user_id
-            max_user_id = self.db['user'].find_one(sort=[("user_id", -1)])
+            max_user_id = self.db['users'].find_one(sort=[("user_id", -1)])
             
             if max_user_id:
                 new_user_id = max_user_id['user_id'] + 1
@@ -402,7 +402,7 @@ class CarRecommendationSystem:
             }
             
             # Insert into database
-            self.db['user'].insert_one(new_user)
+            self.db['users'].insert_one(new_user)
             print("details added:",new_user)
             return new_user_id
             
